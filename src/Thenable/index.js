@@ -16,7 +16,7 @@ function LegacyThenable(executor) {
 
   /**
    * 成功時の処理
-   * @param {T} val
+   * @param {T | PromiseLike<T>} val
    */
   const resolve = (val) => {
     if (this.state !== "pending") return;
@@ -50,6 +50,12 @@ function LegacyThenable(executor) {
 }
 /**
  * Promise 互換の then メソッド（成功/失敗の両方に対応）
+ * 
+ * @template TFullfilled
+ * @template TRejected
+ * @param {(value: T) => TFullfilled} onFulfilled
+ * @param {(reason: unknown) => TRejected} onRejected
+ * @returns {LegacyThenable<TFullfilled | TRejected>}
  */
 LegacyThenable.prototype.then = function (onFulfilled, onRejected) {
   // 1. 新しい Thenable を返してチェーンを可能にする
