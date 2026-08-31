@@ -314,4 +314,21 @@ describe("LegacyThenable", () => {
       throw new Error("await thenable should throw an error but did not");
     });
   });
+
+  describe("Promise の静的メソッド", () => {
+    it("Promise.resolve() で Thenable を Promise に変換できる", async () => {
+      const thenable = new LegacyThenable<number>((resolve) => resolve(1));
+      const promise = Promise.resolve(thenable);
+      expect(promise).toBeInstanceOf(Promise);
+      await expect(promise).resolves.toBe(1);
+    });
+
+    it("Promise.all() で Thenable の配列を Promise の配列に変換できる", async () => {
+      const thenable1 = new LegacyThenable<number>((resolve) => resolve(1));
+      const thenable2 = new LegacyThenable<number>((resolve) => resolve(2));
+      const promise = Promise.all([thenable1, thenable2]);
+      expect(promise).toBeInstanceOf(Promise);
+      await expect(promise).resolves.toEqual([1, 2]);
+    });
+  });
 });
