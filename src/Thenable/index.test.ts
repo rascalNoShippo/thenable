@@ -153,7 +153,6 @@ describe("LegacyThenable", () => {
       const thenable = new LegacyThenable<number>((resolve) => {
         resolve(10);
       });
-      // @ts-expect-error 意図的に引数を省略して挙動を確認する
       await expect(thenable.then()).resolves.toBe(10);
     });
 
@@ -198,6 +197,20 @@ describe("LegacyThenable", () => {
       await expect(thenable).rejects.toBe(error);
     });
 
+    it("onFulfilled が throw しても、同じ then() の onRejected は呼ばれない", async () => {
+      const error = new Error("handler");
+      const thenable = new LegacyThenable((resolve) => resolve("ok")).then(
+        () => {
+          throw error;
+        },
+        () => {
+          throw new Error("this error should not be thrown");
+        },
+      );
+
+      await expect(thenable).rejects.toBe(error);
+    });
+
     it("pending 中に登録した then は解決後に呼ばれる", async () => {
       let resolveNow!: (value: string) => void;
       const thenable = new LegacyThenable<string>((resolve) => {
@@ -224,12 +237,48 @@ describe("LegacyThenable", () => {
     });
   });
 
+  describe("catch", () => {
+    it("catch でエラーをキャッチできる", async () => {
+      const error = new Error("fail");
+      const thenable = new LegacyThenable((_, reject) => {
+        reject(error);
+      });
+
+      await expect(thenable.catch((reason) => reason)).resolves.toBe(error);
+    });
+
+    it("catch を省略するとエラーを伝播する", async () => {
+      const error = new Error("fail");
+      const thenable = new LegacyThenable((_, reject) => {
+        reject(error);
+      });
+
+      await expect(thenable.catch()).rejects.toBe(error);
+    });
+  });
+
   describe("await", () => {
     it("await で値を取り出せる", async () => {
       const thenable = new LegacyThenable<string>((resolve) => {
         setTimeout(() => resolve("2.23"), 10);
       });
       await expect(thenable).resolves.toBe("2.23");
+    });
+
+    it("await でエラーが表面化する", async () => {
+      const error = new Error("fail");
+      const thenable = new LegacyThenable((_, reject) => {
+        reject(error);
+      });
+
+      try {
+        await thenable;
+      } catch (e) {
+        expect(e).toBe(error);
+        return;
+      }
+
+      throw new Error("await thenable should throw an error but did not");
     });
   });
 });

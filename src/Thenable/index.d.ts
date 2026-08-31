@@ -1,8 +1,12 @@
 interface LegacyThenable<T> extends PromiseLike<T> {
   then<TFulfilled, TRejected = never>(
-    onFulfilled: (value: T) => TFulfilled | PromiseLike<TFulfilled>,
+    onFulfilled?: (value: T) => TFulfilled | PromiseLike<TFulfilled>,
     onRejected?: (reason: unknown) => TRejected | PromiseLike<TRejected>
   ): LegacyThenable<TFulfilled | TRejected>;
+
+  catch<TRejected = never>(
+    onRejected?: (reason: unknown) => TRejected | PromiseLike<TRejected>
+  ): LegacyThenable<T | TRejected>;
 
   getState(): "pending" | "fulfilled" | "rejected";
 }

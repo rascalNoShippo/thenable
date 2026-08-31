@@ -53,8 +53,8 @@ function LegacyThenable(executor) {
  * 
  * @template TFullfilled
  * @template TRejected
- * @param {(value: T) => TFullfilled} onFulfilled
- * @param {(reason: unknown) => TRejected} onRejected
+ * @param {(value: T) => TFullfilled} [onFulfilled]
+ * @param {(reason: unknown) => TRejected} [onRejected]
  * @returns {LegacyThenable<TFullfilled | TRejected>}
  */
 LegacyThenable.prototype.then = function (onFulfilled, onRejected) {
@@ -87,6 +87,17 @@ LegacyThenable.prototype.then = function (onFulfilled, onRejected) {
       setTimeout(handle, 0);
     }
   });
+};
+
+/**
+ * Promise 互換の catch メソッド（失敗時のみに対応）
+ * 
+ * @template TRejected
+ * @param {(reason: unknown) => TRejected} [onRejected]
+ * @returns {LegacyThenable<T | TRejected>}
+ */
+LegacyThenable.prototype.catch = function (onRejected) {
+  return this.then(undefined, onRejected);
 };
 
 LegacyThenable.prototype.getState = function () {
