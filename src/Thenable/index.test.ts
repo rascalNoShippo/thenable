@@ -235,6 +235,16 @@ describe("LegacyThenable", () => {
       await wait();
       expect(order).toEqual(["sync", "then"]);
     });
+
+    it("onFulfilled が PromiseLike を返す場合、その結果を待つ", async () => {
+      const thenable = new LegacyThenable<number>((resolve) => resolve(1)).then(
+        (_) => {
+          return new LegacyThenable<string>((resolve) => resolve("unwrapped"));
+        },
+      );
+
+      await expect(thenable).resolves.toBe("unwrapped");
+    });
   });
 
   describe("catch", () => {
