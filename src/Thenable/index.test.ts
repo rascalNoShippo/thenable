@@ -245,6 +245,14 @@ describe("LegacyThenable", () => {
 
       await expect(thenable).resolves.toBe("unwrapped");
     });
+
+    it("then() をチェーンすると、前の then() の onFulfilled の戻り値を次の then() に渡す", async () => {
+      const thenable = new LegacyThenable<string>((resolve) => resolve("a"))
+        .then((value) => value + "b")
+        .then((value) => value + "c");
+
+      await expect(thenable).resolves.toBe("abc");
+    });
   });
 
   describe("catch", () => {
