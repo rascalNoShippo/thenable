@@ -29,7 +29,7 @@ function LegacyThenable(executor) {
     this.value = val;
     if (this.onResolved) this.onResolved();
   };
-  
+
   /**
    * 失敗時の処理
    * @param {unknown} reason
@@ -50,7 +50,7 @@ function LegacyThenable(executor) {
 }
 /**
  * Promise 互換の then メソッド（成功/失敗の両方に対応）
- * 
+ *
  * @template TFullfilled
  * @template TRejected
  * @param {(value: T) => TFullfilled} [onFulfilled]
@@ -91,13 +91,32 @@ LegacyThenable.prototype.then = function (onFulfilled, onRejected) {
 
 /**
  * Promise 互換の catch メソッド（失敗時のみに対応）
- * 
+ *
  * @template TRejected
  * @param {(reason: unknown) => TRejected} [onRejected]
  * @returns {LegacyThenable<T | TRejected>}
  */
 LegacyThenable.prototype.catch = function (onRejected) {
   return this.then(undefined, onRejected);
+};
+
+/**
+ * Promise 互換の finally メソッド（成功/失敗の両方に対応）
+ *
+ * @param {() => void} onFinally
+ * @returns {LegacyThenable<T>}
+ */
+LegacyThenable.prototype.finally = function (onFinally) {
+  return this.then(
+    (value) => {
+      onFinally();
+      return value;
+    },
+    (reason) => {
+      onFinally();
+      throw reason;
+    },
+  );
 };
 
 LegacyThenable.prototype.getState = function () {

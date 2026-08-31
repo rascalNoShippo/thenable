@@ -267,6 +267,21 @@ describe("LegacyThenable", () => {
     });
   });
 
+  describe("finally", () => {
+    it("finally で成功後の処理を実行できる", async () => {
+      const thenable = new LegacyThenable<number>((resolve) => resolve(1));
+
+      await expect(thenable.finally(() => 2)).resolves.toBe(1);
+    });
+
+    it("finally で失敗後の処理を実行できる", async () => {
+      const error = new Error("fail");
+      const thenable = new LegacyThenable<number>((_, reject) => reject(error));
+
+      await expect(thenable.finally(() => 2)).rejects.toBe(error);
+    });
+  });
+
   describe("await", () => {
     it("await で値を取り出せる", async () => {
       const thenable = new LegacyThenable<string>((resolve) => {

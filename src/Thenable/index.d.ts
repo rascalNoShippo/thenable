@@ -8,6 +8,8 @@ interface LegacyThenable<T> extends PromiseLike<T> {
     onRejected?: (reason: unknown) => TRejected | PromiseLike<TRejected>
   ): LegacyThenable<T | TRejected>;
 
+  finally(onFinally: () => void): LegacyThenable<T>;
+
   getState(): "pending" | "fulfilled" | "rejected";
 }
 
