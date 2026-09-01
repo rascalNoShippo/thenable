@@ -1,33 +1,33 @@
 import { describe, expect, it } from "vitest";
-import LegacyThenable from "./index.js";
+import { Thenable } from "./index";
 
 const wait = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("LegacyThenable", () => {
   describe("初期状態", () => {
     it("生成直後は pending", () => {
-      const thenable = new LegacyThenable(() => {});
+      const thenable = new Thenable(() => {});
       expect(thenable.getState()).toBe("pending");
     });
   });
 
   describe("resolve", () => {
     it("同期 resolve で fulfilled になり値を保持する", () => {
-      const thenable = new LegacyThenable<number>((resolve) => {
+      const thenable = new Thenable<number>((resolve) => {
         resolve(42);
       });
       expect(thenable.getState()).toBe("fulfilled");
     });
 
     it("then で resolve された値を受け取れる", async () => {
-      const thenable = new LegacyThenable<number>((resolve) => {
+      const thenable = new Thenable<number>((resolve) => {
         resolve(42);
       });
       await expect(thenable).resolves.toBe(42);
     });
 
     it("非同期 resolve 後に fulfilled になる", async () => {
-      const thenable = new LegacyThenable<string>((resolve) => {
+      const thenable = new Thenable<string>((resolve) => {
         setTimeout(() => resolve("done"), 10);
       });
       expect(thenable.getState()).toBe("pending");
@@ -36,7 +36,7 @@ describe("LegacyThenable", () => {
     });
 
     it("2回目以降の resolve は無視する", async () => {
-      const thenable = new LegacyThenable<string>((resolve) => {
+      const thenable = new Thenable<string>((resolve) => {
         resolve("first");
         resolve("second");
       });
@@ -44,7 +44,7 @@ describe("LegacyThenable", () => {
     });
 
     it("resolve 後の reject は無視する", async () => {
-      const thenable = new LegacyThenable<string>((resolve, reject) => {
+      const thenable = new Thenable<string>((resolve, reject) => {
         resolve("ok");
         reject(new Error("ng"));
       });
@@ -55,7 +55,7 @@ describe("LegacyThenable", () => {
 
   describe("reject", () => {
     it("同期 reject で rejected になる", () => {
-      const thenable = new LegacyThenable((_, reject) => {
+      const thenable = new Thenable((_, reject) => {
         reject(new Error("fail"));
       });
       expect(thenable.getState()).toBe("rejected");
@@ -63,7 +63,7 @@ describe("LegacyThenable", () => {
 
     it("then の onRejected で理由を受け取れる", async () => {
       const error = new Error("fail");
-      const thenable = new LegacyThenable((_, reject) => {
+      const thenable = new Thenable((_, reject) => {
         reject(error);
       });
       await expect(thenable).rejects.toBe(error);
@@ -71,7 +71,7 @@ describe("LegacyThenable", () => {
 
     it("2回目以降の reject は無視する", async () => {
       const first = new Error("first");
-      const thenable = new LegacyThenable((_, reject) => {
+      const thenable = new Thenable((_, reject) => {
         reject(first);
         reject(new Error("second"));
       });
@@ -80,7 +80,7 @@ describe("LegacyThenable", () => {
 
     it("reject 後の resolve は無視する", async () => {
       const error = new Error("ng");
-      const thenable = new LegacyThenable((resolve, reject) => {
+      const thenable = new Thenable((resolve, reject) => {
         reject(error);
         resolve("ok");
       });
@@ -92,7 +92,7 @@ describe("LegacyThenable", () => {
   describe("executor の例外", () => {
     it("executor が throw したら rejected になる", async () => {
       const error = new Error("boom");
-      const thenable = new LegacyThenable(() => {
+      const thenable = new Thenable(() => {
         throw error;
       });
       expect(thenable.getState()).toBe("rejected");
@@ -102,17 +102,17 @@ describe("LegacyThenable", () => {
 
   describe("Thenable のアンラップ", () => {
     it("resolve に Thenable を渡すと値をアンラップする", async () => {
-      const inner = new LegacyThenable<number>((resolve) => {
+      const inner = new Thenable<number>((resolve) => {
         resolve(7);
       });
-      const outer = new LegacyThenable<number>((resolve) => {
+      const outer = new Thenable<number>((resolve) => {
         resolve(inner);
       });
       await expect(outer).resolves.toBe(7);
     });
 
     it("resolve に Promise を渡すと値をアンラップする", async () => {
-      const thenable = new LegacyThenable<string>((resolve) => {
+      const thenable = new Thenable<string>((resolve) => {
         resolve(Promise.resolve("unwrapped"));
       });
       await expect(thenable).resolves.toBe("unwrapped");
@@ -120,10 +120,10 @@ describe("LegacyThenable", () => {
 
     it("内側の Thenable が reject したら外側も reject する", async () => {
       const error = new Error("inner");
-      const inner = new LegacyThenable((_, reject) => {
+      const inner = new Thenable((_, reject) => {
         reject(error);
       });
-      const outer = new LegacyThenable((resolve) => {
+      const outer = new Thenable((resolve) => {
         resolve(inner);
       });
       await expect(outer).rejects.toBe(error);
@@ -132,16 +132,16 @@ describe("LegacyThenable", () => {
 
   describe("then", () => {
     it("新しい Thenable を返す", () => {
-      const thenable = new LegacyThenable<number>((resolve) => {
+      const thenable = new Thenable<number>((resolve) => {
         resolve(1);
       });
       const next = thenable.then((value) => value + 1);
-      expect(next).toBeInstanceOf(LegacyThenable);
+      expect(next).toBeInstanceOf(Thenable);
       expect(next).not.toBe(thenable);
     });
 
     it("onFulfilled の戻り値を次の then に渡す", async () => {
-      const result = await new LegacyThenable<number>((resolve) => {
+      const result = await new Thenable<number>((resolve) => {
         resolve(1);
       })
         .then((value) => value + 1)
@@ -150,14 +150,14 @@ describe("LegacyThenable", () => {
     });
 
     it("onFulfilled を省略すると値をそのまま渡す", async () => {
-      const thenable = new LegacyThenable<number>((resolve) => {
+      const thenable = new Thenable<number>((resolve) => {
         resolve(10);
       });
       await expect(thenable.then()).resolves.toBe(10);
     });
 
     it("onRejected でキャッチすると次は fulfilled になる", async () => {
-      const result = await new LegacyThenable((_, reject) => {
+      const result = await new Thenable((_, reject) => {
         reject(new Error("fail"));
       }).then(
         () => "unused",
@@ -168,7 +168,7 @@ describe("LegacyThenable", () => {
 
     it("onRejected を省略すると reject を伝播する", async () => {
       const error = new Error("fail");
-      const thenable = new LegacyThenable((_, reject) => {
+      const thenable = new Thenable((_, reject) => {
         reject(error);
       });
       await expect(thenable.then((value) => value)).rejects.toBe(error);
@@ -176,7 +176,7 @@ describe("LegacyThenable", () => {
 
     it("onFulfilled が throw したら次は rejected になる", async () => {
       const error = new Error("handler");
-      const thenable = new LegacyThenable<number>((resolve) => {
+      const thenable = new Thenable<number>((resolve) => {
         resolve(1);
       }).then(() => {
         throw error;
@@ -186,7 +186,7 @@ describe("LegacyThenable", () => {
 
     it("onRejected が throw したら次は rejected になる", async () => {
       const error = new Error("handler");
-      const thenable = new LegacyThenable((_, reject) => {
+      const thenable = new Thenable((_, reject) => {
         reject(new Error("original"));
       }).then(
         () => "unused",
@@ -199,7 +199,7 @@ describe("LegacyThenable", () => {
 
     it("onFulfilled が throw しても、同じ then() の onRejected は呼ばれない", async () => {
       const error = new Error("handler");
-      const thenable = new LegacyThenable((resolve) => resolve("ok")).then(
+      const thenable = new Thenable((resolve) => resolve("ok")).then(
         () => {
           throw error;
         },
@@ -213,7 +213,7 @@ describe("LegacyThenable", () => {
 
     it("pending 中に登録した then は解決後に呼ばれる", async () => {
       let resolveNow!: (value: string) => void;
-      const thenable = new LegacyThenable<string>((resolve) => {
+      const thenable = new Thenable<string>((resolve) => {
         resolveNow = resolve;
       });
       const next = thenable.then((value) => value.toUpperCase());
@@ -224,7 +224,7 @@ describe("LegacyThenable", () => {
 
     it("then のコールバックは非同期で実行される", async () => {
       const order: string[] = [];
-      const thenable = new LegacyThenable<void>((resolve) => {
+      const thenable = new Thenable<void>((resolve) => {
         resolve();
       });
       thenable.then(() => {
@@ -237,9 +237,9 @@ describe("LegacyThenable", () => {
     });
 
     it("onFulfilled が PromiseLike を返す場合、その結果を待つ", async () => {
-      const thenable = new LegacyThenable<number>((resolve) => resolve(1)).then(
+      const thenable = new Thenable<number>((resolve) => resolve(1)).then(
         (_) => {
-          return new LegacyThenable<string>((resolve) => resolve("unwrapped"));
+          return new Thenable<string>((resolve) => resolve("unwrapped"));
         },
       );
 
@@ -247,7 +247,7 @@ describe("LegacyThenable", () => {
     });
 
     it("then() をチェーンすると、前の then() の onFulfilled の戻り値を次の then() に渡す", async () => {
-      const thenable = new LegacyThenable<string>((resolve) => resolve("a"))
+      const thenable = new Thenable<string>((resolve) => resolve("a"))
         .then((value) => value + "b")
         .then((value) => value + "c");
 
@@ -258,7 +258,7 @@ describe("LegacyThenable", () => {
   describe("catch", () => {
     it("catch でエラーをキャッチできる", async () => {
       const error = new Error("fail");
-      const thenable = new LegacyThenable((_, reject) => {
+      const thenable = new Thenable((_, reject) => {
         reject(error);
       });
 
@@ -267,7 +267,7 @@ describe("LegacyThenable", () => {
 
     it("catch を省略するとエラーを伝播する", async () => {
       const error = new Error("fail");
-      const thenable = new LegacyThenable((_, reject) => {
+      const thenable = new Thenable((_, reject) => {
         reject(error);
       });
 
@@ -277,14 +277,14 @@ describe("LegacyThenable", () => {
 
   describe("finally", () => {
     it("finally で成功後の処理を実行できる", async () => {
-      const thenable = new LegacyThenable<number>((resolve) => resolve(1));
+      const thenable = new Thenable<number>((resolve) => resolve(1));
 
       await expect(thenable.finally(() => 2)).resolves.toBe(1);
     });
 
     it("finally で失敗後の処理を実行できる", async () => {
       const error = new Error("fail");
-      const thenable = new LegacyThenable<number>((_, reject) => reject(error));
+      const thenable = new Thenable<number>((_, reject) => reject(error));
 
       await expect(thenable.finally(() => 2)).rejects.toBe(error);
     });
@@ -292,7 +292,7 @@ describe("LegacyThenable", () => {
 
   describe("await", () => {
     it("await で値を取り出せる", async () => {
-      const thenable = new LegacyThenable<string>((resolve) => {
+      const thenable = new Thenable<string>((resolve) => {
         setTimeout(() => resolve("2.23"), 10);
       });
       await expect(thenable).resolves.toBe("2.23");
@@ -300,7 +300,7 @@ describe("LegacyThenable", () => {
 
     it("await でエラーが表面化する", async () => {
       const error = new Error("fail");
-      const thenable = new LegacyThenable((_, reject) => {
+      const thenable = new Thenable((_, reject) => {
         reject(error);
       });
 
@@ -317,15 +317,15 @@ describe("LegacyThenable", () => {
 
   describe("Promise の静的メソッド", () => {
     it("Promise.resolve() で Thenable を Promise に変換できる", async () => {
-      const thenable = new LegacyThenable<number>((resolve) => resolve(1));
+      const thenable = new Thenable<number>((resolve) => resolve(1));
       const promise = Promise.resolve(thenable);
       expect(promise).toBeInstanceOf(Promise);
       await expect(promise).resolves.toBe(1);
     });
 
     it("Promise.all() で Thenable の配列を Promise の配列に変換できる", async () => {
-      const thenable1 = new LegacyThenable<number>((resolve) => resolve(1));
-      const thenable2 = new LegacyThenable<number>((resolve) => resolve(2));
+      const thenable1 = new Thenable<number>((resolve) => resolve(1));
+      const thenable2 = new Thenable<number>((resolve) => resolve(2));
       const promise = Promise.all([thenable1, thenable2]);
       expect(promise).toBeInstanceOf(Promise);
       await expect(promise).resolves.toEqual([1, 2]);
