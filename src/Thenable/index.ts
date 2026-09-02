@@ -17,8 +17,8 @@ export class Thenable<T> implements PromiseLike<T> {
   constructor(
     executor: (
       resolve: (value: T | PromiseLike<T>) => void,
-      reject: (reason: unknown) => void,
-    ) => void,
+      reject: (reason: unknown) => void
+    ) => void
   ) {
     const resolve = (val: T | PromiseLike<T>) => {
       if (this.state !== "pending") return;
@@ -54,7 +54,7 @@ export class Thenable<T> implements PromiseLike<T> {
    */
   then<TFulfilled = T, TRejected = never>(
     onFulfilled?: (value: T) => TFulfilled | PromiseLike<TFulfilled>,
-    onRejected?: (reason: unknown) => TRejected | PromiseLike<TRejected>,
+    onRejected?: (reason: unknown) => TRejected | PromiseLike<TRejected>
   ): Thenable<TFulfilled | TRejected> {
     return new Thenable((resolve, reject) => {
       const handleFulfilled = () => {
@@ -85,14 +85,14 @@ export class Thenable<T> implements PromiseLike<T> {
       // マイクロタスク（setTimeout等）で非同期を保証する
       switch (this.state) {
         case "pending":
-          this.onFulfilled = () => setTimeout(handleFulfilled, 0);
-          this.onRejected = () => setTimeout(handleRejected, 0);
+          this.onFulfilled = () => queueMicrotask(handleFulfilled);
+          this.onRejected = () => queueMicrotask(handleRejected);
           break;
         case "fulfilled":
-          setTimeout(handleFulfilled, 0);
+          queueMicrotask(handleFulfilled);
           break;
         case "rejected":
-          setTimeout(handleRejected, 0);
+          queueMicrotask(handleRejected);
           break;
       }
     });
@@ -102,7 +102,7 @@ export class Thenable<T> implements PromiseLike<T> {
    * Promise 互換の catch メソッド（失敗時のみに対応）
    */
   catch<TRejected = never>(
-    onRejected?: (reason: unknown) => TRejected | PromiseLike<TRejected>,
+    onRejected?: (reason: unknown) => TRejected | PromiseLike<TRejected>
   ): Thenable<T | TRejected> {
     return this.then(undefined, onRejected);
   }
@@ -119,7 +119,7 @@ export class Thenable<T> implements PromiseLike<T> {
       (reason) => {
         onFinally();
         throw reason;
-      },
+      }
     );
   }
 
