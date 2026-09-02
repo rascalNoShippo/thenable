@@ -308,6 +308,23 @@ describe("LegacyThenable", () => {
 
       await expect(thenable.finally(() => 2)).rejects.toBe(error);
     });
+
+    it("finally で Promise (fulfilled) を返すと、元の値で解決する", async () => {
+      const thenable = new Thenable<number>((resolve) => resolve(1));
+      await expect(thenable.finally(() => Promise.resolve(2))).resolves.toBe(1);
+
+      const thenable2 = new Thenable<never>((_, reject) => reject("error"));
+      await expect(thenable2.finally(() => Promise.resolve(2))).rejects.toBe(
+        "error"
+      );
+    });
+
+    it("finally で渡された Promise が reject したエラーを伝播する", async () => {
+      const thenable = new Thenable<number>((_, reject) => reject("error"));
+      await expect(
+        thenable.finally(() => Promise.reject("error2"))
+      ).rejects.toBe("error2");
+    });
   });
 
   describe("await", () => {

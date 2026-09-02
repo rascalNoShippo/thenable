@@ -14,6 +14,8 @@ export class Thenable<T> implements PromiseLike<T> {
   private onFulfilled: (() => void)[] = [];
   private onRejected: (() => void)[] = [];
 
+  declare ["constructor"]: typeof Thenable;
+
   constructor(
     executor: (
       resolve: (value: T | PromiseLike<T>) => void,
@@ -32,6 +34,7 @@ export class Thenable<T> implements PromiseLike<T> {
       this.state = "fulfilled";
       this.value = val;
       this.onFulfilled.forEach((fn) => fn());
+
       this.onFulfilled = [];
       this.onRejected = [];
     };
@@ -42,6 +45,7 @@ export class Thenable<T> implements PromiseLike<T> {
       this.state = "rejected";
       this.reason = reason;
       this.onRejected.forEach((fn) => fn());
+
       this.onFulfilled = [];
       this.onRejected = [];
     };
@@ -60,7 +64,7 @@ export class Thenable<T> implements PromiseLike<T> {
     onFulfilled?: (value: T) => TFulfilled | PromiseLike<TFulfilled>,
     onRejected?: (reason: unknown) => TRejected | PromiseLike<TRejected>
   ): Thenable<TFulfilled | TRejected> {
-    return new Thenable((resolve, reject) => {
+    return new this.constructor((resolve, reject) => {
       const handleFulfilled = () => {
         try {
           const result = onFulfilled
@@ -117,11 +121,23 @@ export class Thenable<T> implements PromiseLike<T> {
   finally(onFinally: () => void): Thenable<T> {
     return this.then(
       (value) => {
-        onFinally();
+        const result = onFinally();
+
+        if (isPromiseLike(result)) {
+          return result.then(() => value);
+        }
+
         return value;
       },
       (reason) => {
-        onFinally();
+        const result = onFinally();
+
+        if (isPromiseLike(result)) {
+          return result.then(() => {
+            throw reason;
+          });
+        }
+
         throw reason;
       }
     );
