@@ -1,6 +1,6 @@
-import LegacyThenable from "./Thenable";
+import { Thenable } from "./Thenable";
 
-const thenable = new LegacyThenable<string>((resolve, reject) => {
+const thenable = new Thenable<string>((resolve, reject) => {
   console.log("start");
 
   setTimeout(() => resolve("2.23"), 1000);

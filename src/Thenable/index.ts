@@ -11,8 +11,8 @@ export class Thenable<T> implements PromiseLike<T> {
   private state: ThenableState = "pending";
   private value?: T;
   private reason?: unknown;
-  private onFulfilled: (() => void) | null = null;
-  private onRejected: (() => void) | null = null;
+  private onFulfilled: (() => void)[] = [];
+  private onRejected: (() => void)[] = [];
 
   constructor(
     executor: (
@@ -31,7 +31,9 @@ export class Thenable<T> implements PromiseLike<T> {
 
       this.state = "fulfilled";
       this.value = val;
-      this.onFulfilled?.();
+      this.onFulfilled.forEach((fn) => fn());
+      this.onFulfilled = [];
+      this.onRejected = [];
     };
 
     const reject = (reason: unknown) => {
@@ -39,7 +41,9 @@ export class Thenable<T> implements PromiseLike<T> {
 
       this.state = "rejected";
       this.reason = reason;
-      this.onRejected?.();
+      this.onRejected.forEach((fn) => fn());
+      this.onFulfilled = [];
+      this.onRejected = [];
     };
 
     try {
@@ -85,8 +89,8 @@ export class Thenable<T> implements PromiseLike<T> {
       // マイクロタスク（setTimeout等）で非同期を保証する
       switch (this.state) {
         case "pending":
-          this.onFulfilled = () => queueMicrotask(handleFulfilled);
-          this.onRejected = () => queueMicrotask(handleRejected);
+          this.onFulfilled.push(() => queueMicrotask(handleFulfilled));
+          this.onRejected.push(() => queueMicrotask(handleRejected));
           break;
         case "fulfilled":
           queueMicrotask(handleFulfilled);

@@ -161,7 +161,7 @@ describe("LegacyThenable", () => {
         reject(new Error("fail"));
       }).then(
         () => "unused",
-        () => "recovered",
+        () => "recovered"
       );
       expect(result).toBe("recovered");
     });
@@ -192,7 +192,7 @@ describe("LegacyThenable", () => {
         () => "unused",
         () => {
           throw error;
-        },
+        }
       );
       await expect(thenable).rejects.toBe(error);
     });
@@ -205,7 +205,7 @@ describe("LegacyThenable", () => {
         },
         () => {
           throw new Error("this error should not be thrown");
-        },
+        }
       );
 
       await expect(thenable).rejects.toBe(error);
@@ -240,7 +240,7 @@ describe("LegacyThenable", () => {
       const thenable = new Thenable<number>((resolve) => resolve(1)).then(
         (_) => {
           return new Thenable<string>((resolve) => resolve("unwrapped"));
-        },
+        }
       );
 
       await expect(thenable).resolves.toBe("unwrapped");
@@ -252,6 +252,26 @@ describe("LegacyThenable", () => {
         .then((value) => value + "c");
 
       await expect(thenable).resolves.toBe("abc");
+    });
+
+    it("then() を複数回呼ぶと、コールバックを順に実行する", async () => {
+      let resolveNow!: () => void;
+      const order: string[] = [];
+
+      const thenable = new Thenable<void>((resolve) => {
+        resolveNow = resolve;
+      });
+
+      const promises = Promise.all([
+        thenable.then(() => order.push("then1")),
+        thenable.then(() => order.push("then2")),
+        thenable.then(() => order.push("then3")),
+      ]);
+
+      resolveNow();
+      await promises;
+
+      expect(order).toEqual(["then1", "then2", "then3"]);
     });
   });
 
